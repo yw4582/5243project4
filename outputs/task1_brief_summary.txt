@@ -1,0 +1,21 @@
+Project 4 Task 1 Brief Summary
+=============================
+Source directory: /Users/shielawu/.cache/kagglehub/datasets/megancrenshaw/home-credit-default-risk/versions/2
+Credible source: Kaggle Home Credit Default Risk
+Prepared dataset shape: 307511 rows x 439 columns
+Task 2+ dataset: outputs/processed/home_credit_task1_cleaned.csv (307511 x 439)
+
+Cleaning completed:
+- Standardized column names
+- Removed duplicates
+- Normalized formatting and missing-value placeholders
+- Converted numeric-like text columns
+- Imputed missing values
+- Aggregated and merged supporting tables (if available)
+
+Rationale for key cleaning choices:
+- Numeric missing values were imputed by median for robustness to skew/outliers.
+- Categorical missing values were imputed as UNKNOWN to preserve missingness signal.
+- Outlier removal was deferred to Task 2+ for transparent EDA/modeling decisions.
+
+Cleaned dataset saved to: /Users/shielawu/Desktop/5243/project4/outputs/processed/home_credit_task1_cleaned.csv

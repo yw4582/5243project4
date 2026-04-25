@@ -1,0 +1,21 @@
+{
+  "source_directory": "/Users/shielawu/.cache/kagglehub/datasets/megancrenshaw/home-credit-default-risk/versions/2",
+  "credible_source_note": "This dataset should be cited as Kaggle Home Credit Default Risk (public competition dataset).",
+  "tables_used": {
+    "required": [
+      "application_train.csv"
+    ],
+    "optional_if_available": [
+      "bureau.csv",
+      "previous_application.csv"
+    ]
+  },
+  "shape_after_preparation": [
+    307511,
+    439
+  ],
+  "target_distribution": {
+    "0": 282686,
+    "1": 24825
+  }
+}

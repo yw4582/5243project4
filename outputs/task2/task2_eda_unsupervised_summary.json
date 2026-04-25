@@ -1,0 +1,40 @@
+{
+  "input_dataset": "outputs/processed/home_credit_task1_cleaned.csv",
+  "shape": [
+    307511,
+    439
+  ],
+  "target_distribution": {
+    "0": 282686,
+    "1": 24825
+  },
+  "eda_outputs": {
+    "numeric_descriptive_stats_csv": "outputs/task2/task2_numeric_descriptive_stats.csv",
+    "feature_target_correlations_csv": "outputs/task2/task2_feature_target_correlations.csv",
+    "statistical_tests_csv": "outputs/task2/task2_statistical_tests.csv",
+    "categorical_associations_csv": "outputs/task2/task2_categorical_associations.csv",
+    "cluster_profiles_csv": "outputs/task2/task2_cluster_profiles.csv",
+    "task3_ready_unsupervised_features_sample_csv": "outputs/task2/task2_unsupervised_features_sample.csv",
+    "figures_directory": "outputs/task2/figures"
+  },
+  "unsupervised_learning": {
+    "method": "PCA + KMeans",
+    "sample_size_used": 20000,
+    "n_numeric_features_used": 307,
+    "pca_explained_variance_ratio": {
+      "pc1": 0.074471,
+      "pc2": 0.065718,
+      "pc1_pc2_total": 0.140188
+    },
+    "kmeans": {
+      "n_clusters": 3,
+      "cluster_counts": {
+        "0": 1665,
+        "1": 8703,
+        "2": 9632
+      },
+      "inertia": 5548270.904
+    }
+  },
+  "task3_prep_note": "Task 3 should consume the Task 1 cleaned dataset, while using Task 2 insights for feature transformations and selection."
+}

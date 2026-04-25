@@ -1,0 +1,134 @@
+{
+  "raw_data_summary": {
+    "source_directory": "/Users/shielawu/.cache/kagglehub/datasets/megancrenshaw/home-credit-default-risk/versions/2",
+    "credible_source_note": "This dataset should be cited as Kaggle Home Credit Default Risk (public competition dataset).",
+    "tables_used": {
+      "required": [
+        "application_train.csv"
+      ],
+      "optional_if_available": [
+        "bureau.csv",
+        "previous_application.csv"
+      ]
+    },
+    "shape_after_preparation": [
+      307511,
+      439
+    ],
+    "target_distribution": {
+      "0": 282686,
+      "1": 24825
+    }
+  },
+  "cleaning_strategy_rationale": [
+    "Median imputation is robust to skewed numeric distributions and extreme values common in credit-risk variables.",
+    "Categorical missing values are encoded as 'UNKNOWN' so missingness is preserved as potentially informative signal.",
+    "Type coercion for numeric-like text prevents silent parsing inconsistencies in downstream preprocessing.",
+    "Aggregation of one-to-many tables to customer-level avoids label leakage from row multiplication and keeps one row per SK_ID_CURR.",
+    "Outlier filtering is intentionally deferred to Task 2+ so EDA and model comparison can evaluate transformations transparently."
+  ],
+  "cleaning_steps_taken": [
+    "Standardized all column names to uppercase snake_case style.",
+    "Removed duplicate rows within each source table.",
+    "Trimmed string values and normalized placeholder missing values (e.g., '', NA, N/A, None, null).",
+    "Converted numeric-like object columns to numeric data types.",
+    "Imputed missing numeric values with median and missing categorical values with 'UNKNOWN'.",
+    "Aggregated one-to-many support tables to customer-level features using mean/max/min/std and category proportions.",
+    "Merged prepared support tables into application_train using SK_ID_CURR.",
+    "Removed duplicated columns generated during merge."
+  ],
+  "table_level_cleaning_log": {
+    "main_table": {
+      "table": "application_train.csv",
+      "raw_shape": [
+        307511,
+        122
+      ],
+      "clean_shape": [
+        307511,
+        122
+      ],
+      "duplicate_rows_removed": 0,
+      "duplicate_rows_removed_ratio": 0.0,
+      "missing_values_before_cleaning": 9152465,
+      "missing_rate_before_cleaning": 0.243959,
+      "missing_values_imputed_numeric": 8388094,
+      "missing_values_imputed_categorical": 0,
+      "object_to_numeric_columns": [],
+      "missing_values_after_cleaning": 0,
+      "missing_rate_after_cleaning": 0.0,
+      "outlier_rows_removed": 0,
+      "outlier_handling_note": "No rows were removed as outliers in Task 1; outlier treatment is deferred to Task 2+ modeling stage."
+    },
+    "optional_tables": [
+      {
+        "table": "bureau.csv",
+        "prefix": "BUREAU",
+        "cleaning": {
+          "table": "bureau.csv",
+          "raw_shape": [
+            1716428,
+            17
+          ],
+          "clean_shape": [
+            1716428,
+            17
+          ],
+          "duplicate_rows_removed": 0,
+          "duplicate_rows_removed_ratio": 0.0,
+          "missing_values_before_cleaning": 3939947,
+          "missing_rate_before_cleaning": 0.135026,
+          "missing_values_imputed_numeric": 3939947,
+          "missing_values_imputed_categorical": 0,
+          "object_to_numeric_columns": [],
+          "missing_values_after_cleaning": 0,
+          "missing_rate_after_cleaning": 0.0,
+          "outlier_rows_removed": 0,
+          "outlier_handling_note": "No rows were removed as outliers in Task 1; outlier treatment is deferred to Task 2+ modeling stage."
+        },
+        "aggregated_shape": [
+          305811,
+          79
+        ]
+      },
+      {
+        "table": "previous_application.csv",
+        "prefix": "PREV",
+        "cleaning": {
+          "table": "previous_application.csv",
+          "raw_shape": [
+            1670214,
+            37
+          ],
+          "clean_shape": [
+            1670214,
+            37
+          ],
+          "duplicate_rows_removed": 0,
+          "duplicate_rows_removed_ratio": 0.0,
+          "missing_values_before_cleaning": 11109336,
+          "missing_rate_before_cleaning": 0.179769,
+          "missing_values_imputed_numeric": 10288585,
+          "missing_values_imputed_categorical": 0,
+          "object_to_numeric_columns": [],
+          "missing_values_after_cleaning": 0,
+          "missing_rate_after_cleaning": 0.0,
+          "outlier_rows_removed": 0,
+          "outlier_handling_note": "No rows were removed as outliers in Task 1; outlier treatment is deferred to Task 2+ modeling stage."
+        },
+        "aggregated_shape": [
+          338857,
+          242
+        ]
+      }
+    ]
+  },
+  "dataset_for_task2_and_beyond": {
+    "path": "outputs/processed/home_credit_task1_cleaned.csv",
+    "definition": "Primary cleaned customer-level modeling dataset for Task 2+.",
+    "shape": [
+      307511,
+      439
+    ]
+  }
+}

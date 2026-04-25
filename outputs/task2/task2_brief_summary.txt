@@ -1,0 +1,21 @@
+Project 4 Task 2 Brief Summary
+=============================
+Input dataset: outputs/processed/home_credit_task1_cleaned.csv
+Shape analyzed: 307511 rows x 439 columns
+Numeric features analyzed: 421
+Unsupervised methods: PCA + KMeans(k=3), sample size=20000
+PCA explained variance (PC1+PC2): 14.02%
+Cluster counts: {'0': 1665, '1': 8703, '2': 9632}
+
+Key output files:
+- outputs/task2/task2_numeric_descriptive_stats.csv
+- outputs/task2/task2_feature_target_correlations.csv
+- outputs/task2/task2_statistical_tests.csv
+- outputs/task2/task2_categorical_associations.csv
+- outputs/task2/task2_cluster_profiles.csv
+- outputs/task2/task2_unsupervised_features_sample.csv
+- outputs/task2/task2_eda_unsupervised_summary.json
+- outputs/task2/task2_insights.txt
+- outputs/task2/figures/task2_target_distribution.png
+- outputs/task2/figures/task2_top_feature_correlation_heatmap.png
+- outputs/task2/figures/task2_pca_kmeans_clusters.png

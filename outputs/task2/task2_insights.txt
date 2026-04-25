@@ -1,0 +1,30 @@
+Task 2 Key Insights (EDA + Unsupervised)
+=======================================
+Dataset analyzed: outputs/processed/home_credit_task1_cleaned.csv (307511 x 439)
+
+1) Global structure
+- Class imbalance remains visible: TARGET=1 count is 24825 vs TARGET=0 count 282686.
+- Numeric feature space used for unsupervised analysis: 307 columns.
+
+2) Strongest feature-target relationships (Pearson)
+- EXT_SOURCE_2: correlation with TARGET = -0.1603
+- EXT_SOURCE_3: correlation with TARGET = -0.1559
+- EXT_SOURCE_1: correlation with TARGET = -0.0989
+- BUREAU_DAYS_CREDIT_MEAN: correlation with TARGET = 0.0897
+- BUREAU_CREDIT_ACTIVE_CLOSED: correlation with TARGET = -0.0794
+
+3) Statistical evidence of group differences (Mann-Whitney U)
+- EXT_SOURCE_2: p=0.000e+00, Cohen's d=-0.562
+- EXT_SOURCE_3: p=0.000e+00, Cohen's d=-0.552
+- EXT_SOURCE_1: p=0.000e+00, Cohen's d=-0.360
+- BUREAU_DAYS_CREDIT_MEAN: p=0.000e+00, Cohen's d=0.339
+- BUREAU_CREDIT_ACTIVE_CLOSED: p=0.000e+00, Cohen's d=-0.294
+
+4) Unsupervised structure
+- PCA PC1+PC2 explains 14.02% variance in sampled standardized data.
+- KMeans(k=3) cluster counts: {'0': 1665, '1': 8703, '2': 9632}.
+- Cluster-level default rates (sample): cluster 0=0.0523, cluster 1=0.0967, cluster 2=0.0744
+
+5) Task 3 feature engineering implications
+- Reuse unsupervised features: PCA_1, PCA_2, CLUSTER_ID, DIST_TO_CLUSTER_0/1/2.
+- Prioritize features with strong correlation and significant distribution shifts between TARGET groups.
