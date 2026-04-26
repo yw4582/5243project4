@@ -2,7 +2,11 @@
 
 ## Purpose
 
-Task 3 transforms the cleaned Home Credit dataset from Task 1 into a modeling-ready feature set. It fixes known data anomalies, engineers 22 new credit-risk features based on domain knowledge, encodes categorical variables, clips outliers, scales numeric features, and removes redundant features through correlation-based deduplication. The output is a single CSV file ready for supervised learning in Task 4.
+Task 3 transforms the cleaned Home Credit dataset from Task 1 into a modeling-ready feature set. It fixes known data anomalies, engineers domain-driven features, encodes categorical variables, handles outliers, scales numeric features, and applies a two-stage feature selection process to reduce dimensionality while preserving predictive power.
+
+The output is a compact and efficient dataset ready for supervised learning in Task 4.
+
+---
 
 ## How to Run
 
@@ -12,153 +16,153 @@ From the project directory:
 python home_credit_project4_task3.py --task1-input home_credit_task1_cleaned.csv
 ```
 
-If LightGBM is not installed, add `--no-lgbm` to skip importance-based feature selection:
+Skip LightGBM feature selection if needed:
 
 ```bash
 python home_credit_project4_task3.py --task1-input home_credit_task1_cleaned.csv --no-lgbm
 ```
 
-To also use Task 2 unsupervised features (PCA, KMeans):
+Include Task 2 unsupervised features (optional):
 
 ```bash
-python home_credit_project4_task3.py \
-  --task1-input home_credit_task1_cleaned.csv \
+python home_credit_project4_task3.py `
+  --task1-input home_credit_task1_cleaned.csv `
   --task2-unsup outputs/task2/task2_unsupervised_features_sample.csv
 ```
 
-Optional arguments:
-
-- `--top-k-features 80`: keep top K features by LightGBM importance (default: 80, requires LightGBM)
-- `--corr-threshold 0.95`: drop one of any feature pair with absolute Pearson correlation above this value (default: 0.95)
-- `--output-dir outputs`: root directory for all outputs (default: `outputs`)
+---
 
 ## Input Dataset
 
-Task 3 uses:
+* **Primary input:** `home_credit_task1_cleaned.csv`
+* Shape: **307,511 rows × 439 columns**
 
-```text
-home_credit_task1_cleaned.csv
-```
+Optional:
 
-The latest run processed:
+* `outputs/task2/task2_unsupervised_features_sample.csv` (PCA + clustering features)
 
-```text
-307,511 rows x 439 columns
-```
-
-Optionally merges:
-
-```text
-outputs/task2/task2_unsupervised_features_sample.csv
-```
-
-This file adds PCA_1, PCA_2, CLUSTER_ID, and DIST_TO_CLUSTER_* features from Task 2. If it is not found, the merge step is skipped automatically.
+---
 
 ## Anomaly Fix
 
-`DAYS_EMPLOYED = 365243` is a documented encoding error in the raw dataset meaning "not employed / retired" rather than actual work tenure. Without fixing this, models would treat these applicants as having approximately 1,000 years of employment.
+The value `DAYS_EMPLOYED = 365243` is a known placeholder representing missing or special cases.
 
-Latest run:
+* Rows affected: **55,374**
+* Fix:
 
-- Rows affected: `55,374`
-- Fix applied: replaced with column median
-- New column added: `DAYS_EMPLOYED_ANOM = 1` for affected rows, preserving the signal
+  * Replaced with median
+  * Added binary flag: `DAYS_EMPLOYED_ANOM`
+
+This preserves the anomaly as an informative signal.
+
+---
 
 ## Feature Engineering
 
-Task 3 engineers the following new features when their source columns are available. All features are guarded against zero denominators, infinite values, and missing values.
+A total of **22 domain-driven features** were created:
 
-**Credit Burden Ratios**
+### Credit Burden Ratios
 
-- `CREDIT_INCOME_RATIO = AMT_CREDIT / AMT_INCOME_TOTAL` — loan amount relative to annual income; higher values indicate heavier debt load
-- `ANNUITY_INCOME_RATIO = AMT_ANNUITY / AMT_INCOME_TOTAL` — monthly repayment as a fraction of income (debt-service ratio)
-- `CREDIT_ANNUITY_RATIO = AMT_CREDIT / AMT_ANNUITY` — estimated repayment term in months
-- `GOODS_CREDIT_RATIO = AMT_GOODS_PRICE / AMT_CREDIT` — goods price to loan amount, a proxy for loan-to-value ratio
-- `DOWN_PAYMENT_PROXY = AMT_CREDIT - AMT_GOODS_PRICE` — difference between credit granted and goods price
+* CREDIT_INCOME_RATIO
+* ANNUITY_INCOME_RATIO
+* CREDIT_ANNUITY_RATIO
+* GOODS_CREDIT_RATIO
+* DOWN_PAYMENT_PROXY
 
-**Age and Employment Features**
+### Age & Employment
 
-- `AGE_YEARS = -DAYS_BIRTH / 365.25` — applicant age in years
-- `EMPLOYED_YEARS = -DAYS_EMPLOYED / 365.25` — employment tenure in years
-- `DAYS_EMPLOYED_PERC = DAYS_EMPLOYED / DAYS_BIRTH` — employment tenure as a fraction of total age
-- `AGE_CREDIT_INTERACTION = AGE_YEARS × CREDIT_INCOME_RATIO` — interaction between age and debt burden
+* AGE_YEARS
+* EMPLOYED_YEARS
+* DAYS_EMPLOYED_PERC
+* AGE_CREDIT_INTERACTION
 
-**External Credit Score Aggregations**
+### External Credit Scores (EXT_SOURCE)
 
-EXT_SOURCE_1, EXT_SOURCE_2, and EXT_SOURCE_3 are scores from external credit bureaus and are the strongest predictors in this dataset. Multiple aggregations capture different aspects of the signal:
+* EXT_SOURCE_MEAN / MIN / MAX / STD
+* EXT_SOURCE_PROD
+* EXT_SOURCE_WEIGHTED
 
-- `EXT_SOURCE_MEAN` — average of available scores
-- `EXT_SOURCE_MIN` — lowest score (worst-case bureau assessment)
-- `EXT_SOURCE_MAX` — highest score
-- `EXT_SOURCE_STD` — standard deviation; high disagreement between bureaus may indicate risk
-- `EXT_SOURCE_PROD` — product of all three scores; amplifies the risk signal when all scores are jointly low
-- `EXT_SOURCE_WEIGHTED` — weighted combination with EXT_SOURCE_2 at 50% weight, EXT_SOURCE_1 and EXT_SOURCE_3 at 25% each
+### Behavioral & Risk Signals
 
-**Other Risk Signals**
+* DOCUMENT_COUNT
+* DAYS_LAST_PHONE_CHANGE_ABS
+* SOCIAL_CIRCLE_DEFAULT_RATE
+* CREDIT_ENQUIRIES_FLAG
 
-- `DOCUMENT_COUNT` — total number of documents provided by the applicant
-- `DAYS_LAST_PHONE_CHANGE_ABS` — absolute days since last phone number change
-- `SOCIAL_CIRCLE_DEFAULT_RATE = DEF_30_CNT_SOCIAL_CIRCLE / OBS_30_CNT_SOCIAL_CIRCLE` — default rate within the applicant's social circle
-- `CREDIT_ENQUIRIES_FLAG` — binary flag for more than 3 credit bureau enquiries in the past year
+### Bureau & Previous Applications
 
-**Bureau and Previous Application Features** (available when Task 1 merged supporting tables)
+* BUREAU_CREDIT_RATIO
+* BUREAU_OVERDUE_FLAG
+* PREV_CREDIT_RATIO
 
-- `BUREAU_CREDIT_RATIO` — historical bureau credit relative to current application credit
-- `BUREAU_OVERDUE_FLAG` — binary flag for any overdue bureau credit amount
-- `PREV_CREDIT_RATIO` — previous application credit amounts relative to current credit
-
-Latest run: **22 new features engineered**
+---
 
 ## Preprocessing Steps
 
-**Categorical Encoding**
+### Categorical Encoding
 
-- Binary columns (2 unique values): label-encoded to 0/1
-- Low-cardinality columns (3–10 unique values): one-hot encoded with `drop_first=True`
-- High-cardinality columns (>10 unique values): dropped to avoid excessive sparse dimensions
+* Binary encoded: 3 columns
+* One-hot encoded: 11 columns
+* Dropped high-cardinality columns: 2
 
-Latest run: binary encoded `3`, one-hot encoded `11`, dropped `2`
+---
 
-**Outlier Clipping**
+### Outlier Handling
 
-All numeric columns winsorized to the 1st–99th percentile range to prevent extreme values from distorting the scaler and model training.
+* Method: Winsorization (1st–99th percentile)
+* Applied to: 311 numeric columns
 
-Latest run: `311` columns clipped
+---
 
-**Scaling**
+### Scaling
 
-StandardScaler applied to all non-binary numeric features, producing zero mean and unit variance. Binary columns (0/1 only) are excluded from scaling. The fitted scaler is saved as `scaler.pkl` and must be reused on the test set in Task 4 without refitting to avoid data leakage.
+* Method: StandardScaler
+* Applied to: 385 numeric features
+* Saved as:
+  `outputs/task3/processed/home_credit_task3_scaler.pkl`
 
-Latest run: `385` columns scaled
+---
 
-**Feature Selection**
+## Feature Selection
 
-Stage A — Correlation deduplication: for any pair of features with absolute Pearson correlation ≥ 0.95, the one with lower variance is dropped.
+### Stage A: Correlation Deduplication
 
-Stage B — LightGBM importance ranking (requires LightGBM): features ranked by gain importance, top K kept. Skip with `--no-lgbm` if LightGBM is not installed.
+* Threshold: |r| ≥ 0.95
+* Dropped: 77 features
+* Remaining: 422 features
 
-Latest run: dropped `77` correlated features, final dataset has `422` features (Stage B skipped)
+---
+
+### Stage B: LightGBM Feature Importance 
+
+* Method: Gain-based importance ranking
+* Selected: **Top 80 features**
+* Final feature set is optimized for:
+
+  * Predictive performance
+  * Reduced redundancy
+  * Better interpretability
+
+---
 
 ## Output Files
 
-Main files:
+### Core Outputs
 
-- `outputs/task3/processed/home_credit_task3_modeling_ready.csv`: final modeling-ready dataset — **use this for Task 4**
-- `outputs/task3/processed/home_credit_task3_scaler.pkl`: fitted StandardScaler — reuse on test set in Task 4
-- `outputs/task3/processed/home_credit_task3_feature_metadata.csv`: feature provenance, LightGBM importance, variance, and missing rate
-- `outputs/task3/task3_summary.txt`: human-readable pipeline report
-- `outputs/task3/task3_feature_engineering_log.json`: machine-readable processing log
+* `home_credit_task3_modeling_ready.csv` → final dataset (**use for Task 4**)
+* `home_credit_task3_scaler.pkl` → fitted scaler
+* `home_credit_task3_feature_metadata.csv` → feature tracking & importance
+* `task3_feature_engineering_log.json` → full pipeline log
+* `task3_summary.txt` → human-readable summary
 
-Figures:
+### Figures
 
-- `outputs/task3/figures/task3_top30_feature_importance.png`
-- `outputs/task3/figures/task3_dist_CREDIT_INCOME_RATIO.png`
-- `outputs/task3/figures/task3_dist_ANNUITY_INCOME_RATIO.png`
-- `outputs/task3/figures/task3_dist_EXT_SOURCE_MEAN.png`
-- `outputs/task3/figures/task3_dist_AGE_YEARS.png`
-- `outputs/task3/figures/task3_dist_EMPLOYED_YEARS.png`
-- `outputs/task3/figures/task3_cluster_default_rate.png`
-- `outputs/task3/figures/task3_top15_correlation_heatmap.png`
+* Feature importance plot
+* Distribution plots (key features)
+* Correlation heatmap
+* Cluster risk visualization
+
+---
 
 ## Latest Run Summary
 
@@ -167,20 +171,35 @@ Input rows:              307,511
 Input columns:           439
 DAYS_EMPLOYED anomalies: 55,374
 New features engineered: 22
-Dropped (correlation):   77
-Final feature count:     422
-Output shape:            307,511 rows x 424 columns
+After correlation:       422 features
+Final selected features: 80
+Final dataset shape:     307,511 × 82
 ```
+
+---
+
+## Key Design Decisions
+
+* Ratio features capture **relative financial burden**, which generalizes better than raw values.
+* EXT_SOURCE features are the **strongest predictors**, enhanced via aggregation and interaction.
+* Anomalies are preserved via flags instead of removed.
+* Winsorization prevents extreme values from distorting scaling.
+* Two-stage feature selection:
+
+  * Removes redundancy (correlation)
+  * Keeps only the most predictive features (LightGBM)
+
+---
 
 ## Task 4 Handoff
 
-For Task 4 supervised modeling:
+Use the following dataset:
 
-- Load `outputs/task3/processed/home_credit_task3_modeling_ready.csv` as the input dataset.
-- Split TARGET and SK_ID_CURR from the feature matrix before training.
-- Apply the saved `scaler.pkl` to the test split — do not refit the scaler on test data.
-- The target is imbalanced (default rate ~8%, imbalance ratio ~11:1). Evaluate models with AUC, PR-AUC, F1, recall, and precision rather than accuracy alone.
-- Consider class weighting or resampling (e.g. SMOTE) to handle the imbalance.
+```
+outputs/task3/processed/home_credit_task3_modeling_ready.csv
+```
+
+Example:
 
 ```python
 import pandas as pd
@@ -189,3 +208,19 @@ df = pd.read_csv("outputs/task3/processed/home_credit_task3_modeling_ready.csv")
 X = df.drop(columns=["TARGET", "SK_ID_CURR"])
 y = df["TARGET"]
 ```
+
+### Notes
+
+* Target is highly imbalanced (~8% default rate)
+* Use metrics such as:
+
+  * ROC-AUC
+  * Precision / Recall
+  * F1-score
+* Consider class weighting or resampling techniques
+
+---
+
+## Summary
+
+Task 3 reduces the dataset from over **400 features to 80 high-quality predictors**, producing a compact, efficient, and interpretable dataset ready for machine learning modeling.
