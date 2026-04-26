@@ -1,0 +1,163 @@
+{
+  "task1_shape": [
+    307511,
+    439
+  ],
+  "unsup_merged": false,
+  "unsup_features_added": [],
+  "anomaly_fixes": [
+    "DAYS_EMPLOYED: 55374 sentinel values (365243) replaced with median; DAYS_EMPLOYED_ANOM flag added."
+  ],
+  "engineered_features": [
+    {
+      "feature": "CREDIT_INCOME_RATIO",
+      "description": "Loan amount relative to annual income \u2013 higher = heavier debt load.",
+      "source": "engineered"
+    },
+    {
+      "feature": "ANNUITY_INCOME_RATIO",
+      "description": "Monthly repayment burden as a fraction of income (debt-service ratio).",
+      "source": "engineered"
+    },
+    {
+      "feature": "CREDIT_ANNUITY_RATIO",
+      "description": "Loan term proxy: how many monthly payments to repay the loan.",
+      "source": "engineered"
+    },
+    {
+      "feature": "GOODS_CREDIT_RATIO",
+      "description": "LTV proxy: goods price / credit amount; <1 means goods cost less than credit.",
+      "source": "engineered"
+    },
+    {
+      "feature": "DOWN_PAYMENT_PROXY",
+      "description": "Difference between credit granted and goods price (implicit down-payment).",
+      "source": "engineered"
+    },
+    {
+      "feature": "AGE_YEARS",
+      "description": "Applicant age in years (DAYS_BIRTH is stored as negative).",
+      "source": "engineered"
+    },
+    {
+      "feature": "EMPLOYED_YEARS",
+      "description": "Employment tenure in years (only for employed applicants).",
+      "source": "engineered"
+    },
+    {
+      "feature": "DAYS_EMPLOYED_PERC",
+      "description": "Employment fraction of life: how long applicant has been employed relative to age.",
+      "source": "engineered"
+    },
+    {
+      "feature": "AGE_CREDIT_INTERACTION",
+      "description": "Interaction: older applicants with high credit load may have different risk profile.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_MEAN",
+      "description": "Mean of available external credit scores \u2013 strong single predictor in literature.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_MIN",
+      "description": "Minimum external credit score \u2013 captures worst-case bureau assessment.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_MAX",
+      "description": "Maximum external credit score.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_STD",
+      "description": "Std dev of external scores \u2013 disagreement between bureaus may indicate risk.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_PROD",
+      "description": "Product of external scores \u2013 jointly-low scores amplify the risk signal.",
+      "source": "engineered"
+    },
+    {
+      "feature": "EXT_SOURCE_WEIGHTED",
+      "description": "Weighted combo (EXT_SOURCE_2 carries most weight per competition insights).",
+      "source": "engineered"
+    },
+    {
+      "feature": "DOCUMENT_COUNT",
+      "description": "Total number of documents provided \u2013 more documents may signal diligence.",
+      "source": "engineered"
+    },
+    {
+      "feature": "BUREAU_CREDIT_RATIO",
+      "description": "Ratio of historical bureau credit to current application credit.",
+      "source": "engineered"
+    },
+    {
+      "feature": "BUREAU_OVERDUE_FLAG",
+      "description": "Binary flag: applicant has any overdue bureau credit amount.",
+      "source": "engineered"
+    },
+    {
+      "feature": "PREV_CREDIT_RATIO",
+      "description": "Previous application credit amounts relative to current credit.",
+      "source": "engineered"
+    },
+    {
+      "feature": "DAYS_LAST_PHONE_CHANGE_ABS",
+      "description": "Absolute days since last phone change \u2013 recent changes may indicate instability.",
+      "source": "engineered"
+    },
+    {
+      "feature": "SOCIAL_CIRCLE_DEFAULT_RATE",
+      "description": "Fraction of social circle that defaulted within 30 days \u2013 peer-effect signal.",
+      "source": "engineered"
+    },
+    {
+      "feature": "CREDIT_ENQUIRIES_FLAG",
+      "description": "Flag: more than 3 credit enquiries in past year \u2013 may indicate credit-seeking.",
+      "source": "engineered"
+    }
+  ],
+  "n_engineered": 22,
+  "encoding": {
+    "binary_label_encoded": [
+      "NAME_CONTRACT_TYPE",
+      "FLAG_OWN_CAR",
+      "FLAG_OWN_REALTY"
+    ],
+    "one_hot_encoded": [
+      "CODE_GENDER",
+      "NAME_TYPE_SUITE",
+      "NAME_INCOME_TYPE",
+      "NAME_EDUCATION_TYPE",
+      "NAME_FAMILY_STATUS",
+      "NAME_HOUSING_TYPE",
+      "WEEKDAY_APPR_PROCESS_START",
+      "FONDKAPREMONT_MODE",
+      "HOUSETYPE_MODE",
+      "WALLSMATERIAL_MODE",
+      "EMERGENCYSTATE_MODE"
+    ],
+    "dropped_high_cardinality": [
+      "OCCUPATION_TYPE",
+      "ORGANIZATION_TYPE"
+    ]
+  },
+  "outlier_clipping": {
+    "method": "winsorize 1st-99th percentile",
+    "columns_clipped": 311
+  },
+  "scaling": {
+    "method": "StandardScaler (zero mean, unit variance)",
+    "columns_scaled": 385,
+    "scaler_path": "outputs\\task3\\processed\\home_credit_task3_scaler.pkl"
+  },
+  "feature_selection": {
+    "stage_a_corr_threshold": 0.95,
+    "dropped_by_correlation": 77,
+    "stage_b_lgbm_top_k": 80,
+    "final_feature_count": 80
+  }
+}
