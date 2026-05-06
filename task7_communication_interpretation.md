@@ -1,135 +1,65 @@
-# Task 7: Communication & Interpretation (Advanced-Level Narrative)
+# Task 7: Communication & Interpretation
 
 ## Project Goal and Problem Framing
 
-This project builds an end-to-end machine learning pipeline for **credit default risk prediction** using the Home Credit dataset.  
-The predictive objective is binary classification: given applicant information and aggregated credit history, estimate the likelihood of `TARGET=1` (default).
+This project builds an end-to-end machine learning pipeline for **credit default risk prediction** using the Home Credit dataset. The predictive objective is binary classification: given an applicant's financial profile and aggregated credit history, predict the likelihood of `TARGET=1` (default).
 
-The analysis is designed as a full workflow from raw data handling to final model selection, with two goals:
+The problem is both practically important and analytically challenging. Home Credit serves populations that lack conventional credit histories, making standard scoring approaches insufficient. The dataset is severely class-imbalanced — only 8.07% of applicants default — creating a structural tension between sensitivity and specificity that shapes every decision in this pipeline.
 
-- Build a robust and reproducible model pipeline for imbalanced credit-risk data.
-- Communicate decisions, trade-offs, and practical implications for non-specialist stakeholders.
+The analysis was designed with two goals: (1) build a robust, reproducible model pipeline that explicitly handles class imbalance; and (2) communicate every design decision and trade-off in terms that are meaningful to both technical and non-specialist stakeholders.
 
-## End-to-End Workflow Summary
+---
 
-The workflow follows Tasks 1-6:
+## Pipeline Design: Not Just What, But Why
 
-1. Data acquisition and cleaning from a public, credible source.
-2. EDA and unsupervised learning to identify structure and risk patterns.
-3. Feature engineering and preprocessing to improve predictive signal quality.
-4. Supervised model development with cross-validation.
-5. Model comparison and final model selection based on quantitative and contextual criteria.
-6. Integrated communication of findings, limitations, and recommendations.
+Each stage of the pipeline was designed with explicit reasoning — not just implementation.
 
-## Task 1: Data Acquisition & Preparation - Interpretation
+**Task 1 — Data Acquisition & Preparation**
+Three relational tables were merged into a single customer-level dataset (307,511 applicants, 439 features). Numeric missing values were imputed with the column median — robust to the right-skewed distributions common in credit data. Categorical missing values were encoded as `"UNKNOWN"` rather than discarded, because missingness itself can be an informative risk signal. Outlier removal was deferred intentionally, so EDA could observe true data distributions before any transformation was applied.
 
-The project starts with `application_train.csv` and enriches the base table with optional one-to-many support tables (`bureau.csv`, `previous_application.csv`) by aggregating to customer level and merging on `SK_ID_CURR`.
+**Task 2 — EDA & Unsupervised Learning**
+Statistical testing confirmed that the EXT_SOURCE credit scores are the strongest predictors of default (Pearson |r| up to 0.160, Cohen's d up to 0.562). The class imbalance finding — 91.9% non-default vs. 8.1% default — directly motivated the use of AUC and PR-AUC as primary metrics throughout modeling, since accuracy is misleading under this level of imbalance. PCA and K-means clustering (k=3) were applied on a random sample of 20,000 rows to explore latent structure efficiently; the resulting segmentation showed three customer groups with meaningfully different default rates (5.2%, 9.7%, 7.4%), providing independent unsupervised validation that risk-predictive structure exists in the data.
 
-Key preparation decisions:
+**Why PCA / cluster features were not used in the final supervised model.**  
+PCA coordinates and cluster assignments are defined only for the sampled applicants used to fit the unsupervised models. Merging those columns back into the full dataset (307,511 rows) would leave roughly 287,511 rows without values unless we filled them in artificially or refit the unsupervised models on the entire population. Imputing such a large share of rows would invent structure and could bias downstream supervised learning; refitting PCA/KMeans on all rows—with correct train-only fitting to avoid leakage—was not integrated into our Task 4 pipeline for this submission. **We therefore did not include PCA or cluster-ID features as inputs to the final XGBoost model.** Task 2 still informed downstream choices: it reinforced leveraging external bureau-style scores (**EXT_SOURCE** family) and **credit-burden ratios** as dominant signals—consistent with what later supervised modeling and importance analysis confirmed.
 
-- Standardized schema (column normalization, duplicate handling, placeholder normalization).
-- Converted numeric-like text to numeric types to avoid downstream parsing inconsistency.
-- Imputed missing values using reproducible rules (`median` for numeric, `UNKNOWN` for categorical).
-- Preserved one row per applicant to avoid leakage from one-to-many expansion.
+**Task 3 — Feature Engineering & Preprocessing**
+Twenty-two domain-driven features were engineered. Ratio features (e.g., `ANNUITY_INCOME_RATIO`) are more informative than raw amounts because they capture *relative* financial burden — a monthly payment of 20,000 means something very different for someone earning 30,000 versus 500,000 per month. EXT_SOURCE aggregations (mean, min, max, std, weighted) capture both the typical level and the disagreement between credit bureaus, the latter being an independent risk signal. A two-stage feature selection process (correlation deduplication → LightGBM importance ranking) reduced 461 features to 80, balancing predictive power with model efficiency.
 
-Interpretation:
+**Tasks 4 & 5 — Supervised Modeling & Selection**
+Three models were compared under 5-fold stratified cross-validation. XGBoost was selected as the final model (test AUC = 0.7809, PR-AUC = 0.2730, F1 = 0.294) based on a composite weighted score (0.60 × Test AUC + 0.20 × CV AUC + 0.20 × PR-AUC). It outperforms Logistic Regression and Random Forest across all composite metrics, with the lowest CV variance (±0.0020), indicating the most stable generalization. Logistic Regression is retained as an interpretability benchmark — its coefficients can be directly examined by regulators or stakeholders.
 
-- This stage emphasizes **data reliability over speed**.
-- Aggregation choices prioritize stable customer-level modeling features.
-- Missingness was treated as potentially informative rather than discarded.
-
-## Task 2: EDA + Unsupervised Learning - Interpretation
-
-EDA and statistical analysis were used to build understanding before modeling:
-
-- Descriptive statistics and feature-target correlation profiling.
-- Mann-Whitney U tests and effect sizes for numeric group differences.
-- Chi-square and Cramer's V for categorical association.
-- PCA + KMeans to examine latent structure and cluster-level behavior.
-
-Interpretation:
-
-- Strong class imbalance confirms the need for imbalance-aware evaluation.
-- Risk-related patterns are not purely linear, supporting nonlinear model candidates.
-- Unsupervised structure provides additional intuition for segmentation and feature design.
-
-Challenge and resolution:
-
-- High dimensional numeric space may be noisy and unstable for unsupervised methods.
-- The pipeline addressed this with clipping, scaling, and stable numeric subset construction before PCA/KMeans.
-
-## Task 3: Feature Engineering & Preprocessing - Interpretation
-
-Task 3 transforms raw cleaned features into a compact modeling-ready dataset.
-
-Important engineering choices:
-
-- Sentinel anomaly handling (`DAYS_EMPLOYED=365243`) with both correction and anomaly flag retention.
-- Domain ratio features (income burden, annuity burden, credit structure).
-- External score aggregations (mean/min/max/std/product/weighted).
-- Outlier winsorization (1st-99th percentile) for robust scaling.
-- Mixed encoding strategy (binary label encoding + one-hot for low-cardinality fields).
-- Two-stage feature reduction: correlation deduplication, then importance ranking.
-
-Interpretation:
-
-- The pipeline balances **predictive strength** and **operational interpretability**.
-- Engineered ratios support cross-applicant comparability.
-- Feature reduction mitigates over-redundancy and improves model stability.
-
-## Task 4-5: Supervised Modeling, Evaluation, and Selection - Interpretation
-
-Three supervised models were compared under stratified cross-validation and test evaluation:
-
-- Logistic Regression
-- Random Forest
-- XGBoost
-
-Primary metrics:
-
-- ROC-AUC (primary ranking metric under imbalance)
-- PR-AUC (minority-class sensitivity)
-- F1, Precision, Recall
-- CV mean/std for robustness
-
-Final selection:
-
-- **XGBoost** selected as final model.
-- Best test AUC (`0.7809`), best PR-AUC (`0.2730`), best F1 (`0.2942`), and strongest CV AUC (`0.7776 +/- 0.0020`).
-
-Interpretation:
-
-- The selected model best balances discrimination and minority-class utility.
-- Logistic Regression remains a useful benchmark for interpretability.
-- Precision remains modest across models, so deployment should be framed as **risk screening/ranking**, not deterministic default labeling.
+---
 
 ## Communication to a Non-Technical Audience
 
-Plain-language takeaway:
+The model assigns every applicant a risk score between 0 and 1. It does not make final lending decisions — it helps loan officers **prioritize their review effort** by identifying which applications warrant the most scrutiny.
 
-- The model helps rank applicants by relative default risk.
-- It should support, not replace, lending policy and human oversight.
-- The system is most valuable for early warning and triage of high-risk applications.
+**Plain-language takeaway:** The model is a risk-ranking tool, not a decision-maker. A high score means "this application deserves a closer look," not "this applicant will definitely default."
 
-Decision-use recommendation:
+**How to use it in practice:**
+- Applications above a chosen risk threshold are flagged for manual review before approval.
+- The threshold is set by the business, not the model. Institutions prioritizing loss minimization choose a lower threshold (catching more defaults, accepting more false alarms); those prioritizing approval volume choose a higher one.
+- The model should be monitored over time and recalibrated as applicant behavior and macroeconomic conditions change.
 
-- Use model scores to prioritize review depth.
-- Apply threshold tuning based on business tolerance for missed defaults vs false alarms.
-- Monitor drift and recalibrate as applicant behavior and macro conditions change.
+---
 
 ## Reproducibility and Transparency
 
-The project provides reproducible artifacts across stages (cleaned data, summaries, metrics, and figures), and separates each task into explicit files and outputs.  
-Model selection logic is documented quantitatively and contextually, not by a single metric only.
+Every pipeline stage produces explicit, documented outputs — cleaned datasets, cleaning logs, EDA summaries, statistical test results, feature engineering logs, fitted scalers, and performance metrics. Model selection is documented both quantitatively (composite score with explicit weights) and qualitatively (model-by-model analysis of strengths and limitations). The accompanying Streamlit dashboard provides an interactive interface for exploring results without requiring programming knowledge.
+
+---
 
 ## Limitations and Future Improvements
 
-- Current thresholding still reflects generic defaults; cost-sensitive threshold optimization can improve policy fit.
-- Additional calibration (e.g., probability calibration curves) can improve risk-score reliability.
-- Temporal validation and fairness checks should be added before production deployment.
-- SHAP-based local explanations can strengthen interpretability for adverse-action style communication.
+- **Threshold calibration:** A production deployment should optimize the decision threshold using an explicit cost function (cost of missed defaults vs. false alarms), not a generic default.
+- **Probability calibration:** XGBoost's raw scores may not be well-calibrated probabilities. Platt scaling or isotonic regression could improve reliability when scores are used to set risk-tiered interest rates.
+- **Temporal validation:** The current random train-test split may overestimate future generalization. A time-ordered split would provide a more realistic performance estimate.
+- **Fairness auditing:** Model performance should be evaluated across demographic groups before deployment to identify potential disparate impact.
+- **Explainability:** SHAP values would provide individualized explanations for each prediction, supporting regulatory adverse-action communication requirements.
+
+---
 
 ## Final Conclusion
 
-This project delivers a full data science workflow with a coherent analytical narrative from raw data to final model selection.  
-The final XGBoost model provides the strongest overall predictive performance for default risk ranking, while documented trade-offs and limitations ensure transparent and responsible interpretation.
+This project delivers a complete, transparent, and reproducible machine learning pipeline from raw data to a business-ready risk model. The final XGBoost model achieves competitive performance (test AUC = 0.7809) with documented trade-offs and clear paths for improvement. Its value lies not in replacing human judgment but in augmenting it — helping lending teams direct their expertise toward the applications where it is most needed.
